@@ -119,17 +119,8 @@ def run_setup() -> bool:
     env = os.environ.copy()
     env["PLAYWRIGHT_BROWSERS_PATH"] = BROWSERS_PATH
 
-    # system deps
-    log("Installing system dependencies...")
-    subprocess.run(
-        ["sudo", "apt-get", "install", "-y",
-         "libnss3", "libnspr4", "libatk1.0-0", "libatk-bridge2.0-0",
-         "libcups2", "libdrm2", "libdbus-1-3", "libxkbcommon0",
-         "libxcomposite1", "libxdamage1", "libxfixes3", "libxrandr2",
-         "libgbm1", "libasound2", "libpango-1.0-0", "libcairo2"],
-        capture_output=True, text=True
-    )
-    log("System dependencies done!")
+    # system deps already installed via Dockerfile
+    log("System dependencies pre-installed in Docker image.")
 
     for pkg in ["playwright", "openpyxl", "python-docx"]:
         log(f"Installing {pkg}...")

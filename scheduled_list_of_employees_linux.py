@@ -430,6 +430,7 @@ def run() -> bool:
             doc.save(EXCEL_PATH)
             log("OK: Document updated successfully!")
             log(f"Path: {EXCEL_PATH}")
+            upload_to_onedrive(EXCEL_PATH)
             context.close()
             return True
 
@@ -439,6 +440,58 @@ def run() -> bool:
     finally:
         _shutil.rmtree(tmp_profile, ignore_errors=True)
 
+
+
+
+def upload_to_onedrive(file_path: str) -> bool:
+    """Upload file to OneDrive via Microsoft Graph API."""
+    import urllib.request
+    import urllib.parse
+    import json
+
+    client_id     = os.environ.get("GRAPH_CLIENT_ID", "")
+    tenant_id     = os.environ.get("GRAPH_TENANT_ID", "")
+    client_secret = os.environ.get("GRAPH_CLIENT_SECRET", "")
+    user          = os.environ.get("ONEDRIVE_USER", "")
+
+    if not all([client_id, tenant_id, client_secret, user]):
+        log("ERROR: Missing Graph API credentials in environment.")
+        return False
+
+    # Get access token
+    token_url  = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+    token_data = urllib.parse.urlencode({
+        "grant_type":    "client_credentials",
+        "client_id":     client_id,
+        "client_secret": client_secret,
+        "scope":         "https://graph.microsoft.com/.default",
+    }).encode()
+
+    req = urllib.request.Request(token_url, data=token_data, method="POST")
+    with urllib.request.urlopen(req) as resp:
+        token = json.loads(resp.read())["access_token"]
+
+    # Upload file
+    filename     = os.path.basename(file_path)
+    folder       = "ListOfEmployeesFilesL"
+    upload_url   = f"https://graph.microsoft.com/v1.0/users/{user}/drive/root:/{folder}/{filename}:/content"
+
+    with open(file_path, "rb") as f:
+        file_data = f.read()
+
+    req = urllib.request.Request(
+        upload_url,
+        data=file_data,
+        method="PUT",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type":  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        }
+    )
+    with urllib.request.urlopen(req) as resp:
+        result = json.loads(resp.read())
+        log(f"OK: Uploaded to OneDrive — {result.get('name')} ({result.get('size')} bytes)")
+    return True
 
 # ──────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

@@ -10,12 +10,11 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 RUN pip install --no-cache-dir playwright openpyxl python-docx
-
 RUN playwright install chromium
+RUN mkdir -p /root && touch /root/.holiday_balance_setup_done
 
 COPY . .
 
-# Criar o flag que indica que o setup já foi feito
-RUN mkdir -p /root && touch /root/.holiday_balance_setup_done
+RUN chmod +x entrypoint.sh
 
-CMD ["python", "scheduled_list_of_employees_linux.py"]
+CMD ["/bin/bash", "entrypoint.sh"]
